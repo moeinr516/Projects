@@ -4,61 +4,117 @@ import java.util.List;
 import java.util.Scanner;
 
 public class BoxPlots {
-    double evenOrOdd(List<Double> a){
-        if (a.size() % 2 == 0)
-           return calculatingMedForEvenLength(a);
-        else
-            return calculatingMedForOddLength(a);
-    }
-    double calculatingMedForEvenLength(List<Double> a){
-        double sum = a.get((a.size() / 2) - 1) + a.get((a.size() / 2));
-        return sum / 2;
-    }
-    double calculatingMedForOddLength(List<Double> a){
-        int med = a.size() / 2;
-        return a.get(med);
-    }
-    List<Double> subList(List<Double> a, int first, int last){
-        List<Double> sub = new ArrayList<>();
-        for (int i = first; i < last; i++) {
-            sub.add(a.get(i));
-        }
-        return sub;
+    double calculateQ1(List<Double> inputs) {
+        int element = (int) ((inputs.size() + 1) * (0.25) + 0.75);
+        return inputs.get(element - 1) + ((inputs.get(element) - inputs.get(element - 1)) * 0.25);
     }
 
-    public static void main(String[] args) {
-        double med, q1, q3;
-        List<Double> a = new ArrayList<>();
+    double calculateQ3(List<Double> inputs) {
+        int element = (int) ((inputs.size() + 1) * (0.75) + 0.5);
+        return inputs.get(element - 2) + ((inputs.get(element - 1) - inputs.get(element - 2)) * 0.75);
+    }
+
+    double calculateLowOutLier(double q1, double q3) {
+        double iqr = q3 - q1;
+        return q1 - (1.5 * iqr);
+    }
+
+    double calculateHighOutLier(double q1, double q3) {
+        double iqr = q3 - q1;
+        return q3 + (1.5 * iqr);
+    }
+
+    double calculatingMedForEvenLength(List<Double> inputs) {
+        double sum = inputs.get((inputs.size() / 2) - 1) + inputs.get((inputs.size() / 2));
+        return sum / 2;
+    }
+
+    double calculatingMedForOddLength(List<Double> inputs) {
+        return inputs.get(inputs.size() / 2);
+    }
+
+    double min(List<Double> inputs) {
+        double lowOut = calculateLowOutLier(calculateQ1(inputs), calculateQ3(inputs));
+        for (int i = 0; i < inputs.size(); i++) {
+            if (inputs.get(i) > lowOut) {
+                return inputs.get(i);
+            }
+        }
+        return inputs.getFirst();
+    }
+
+    double max(List<Double> inputs) {
+        double highOut = calculateHighOutLier(calculateQ1(inputs), calculateQ3(inputs));
+        double max = inputs.getLast();
+        if (inputs.getLast() < highOut)
+            return inputs.getLast();
+        else {
+            for (int i = inputs.size() / 2; i < inputs.size(); i++) {
+                if (inputs.get(i) < highOut)
+                    max = inputs.get(i);
+                else
+                    return max;
+            }
+        }
+        return -1;
+    }
+
+    void invalidInputs() {
+        System.out.println("invalid input");
+    }
+
+    List input() {
+        int n = 0;
+        List<Double> inputs = new ArrayList<>();
         BoxPlots plots = new BoxPlots();
         Scanner input = new Scanner(System.in);
         System.out.println("Enter number of your data: ");
-        int n = input.nextInt();
-        System.out.println("Enter your data: ");
-        for (int i = 0; i < n; i++) {
-            a.add(input.nextDouble());
-        }
-
-        Collections.sort(a);
-        List<Double> lowerThanMed = new ArrayList<>();
-        List<Double> upperThanMed = new ArrayList<>();
-        int middle = n / 2;
-        if (n % 2 == 0)
-            lowerThanMed = plots.subList(a, 0, middle - 1);
-        else
-            lowerThanMed = plots.subList(a, 0, middle);
         try {
-            upperThanMed = plots.subList(a, middle + 1, n);
-            med = plots.evenOrOdd(a);
-            q1 = plots.evenOrOdd(lowerThanMed);
-            q3 = plots.evenOrOdd(upperThanMed);
-            System.out.println("Minimum: " + a.getFirst());
+            n = input.nextInt();
+            if (n <= 2) {
+                invalidInputs();
+                return inputs;
+            }
+                else {
+                System.out.println("Enter your data: ");
+                for (int i = 0; i < n; i++) {
+                    inputs.add(input.nextDouble());
+                }
+            }
+        }
+        catch (Exception e) {
+            plots.invalidInputs();
+        }
+        Collections.sort(inputs);
+        return inputs;
+    }
+
+    void boxPlots(List<Double> inputs) {
+        double med, q1, q3;
+        int n = inputs.size();
+        BoxPlots plots = new BoxPlots();
+            if (n % 2 == 0)
+                med = plots.calculatingMedForEvenLength(inputs);
+            else
+                med = plots.calculatingMedForOddLength(inputs);
+            q1 = plots.calculateQ1(inputs);
+            q3 = plots.calculateQ3(inputs);
+            double lowOutLier = plots.calculateLowOutLier(q1, q3);
+            double highOutLier = plots.calculateHighOutLier(q1, q3);
+            System.out.println("Minimum: " + plots.min(inputs));
             System.out.println("Q1: " + q1);
             System.out.println("Med: " + med);
             System.out.println("Q3: " + q3);
-            System.out.println("Maximum: " + a.getLast());
-        }
-        catch (Exception e) {
-            System.out.println("The number of date is less than required");
-        }
+            System.out.println("Maximum: " + plots.max(inputs));
+            System.out.println("Low Outlier: " + lowOutLier);
+            System.out.println("High Outlier: " + highOutLier);
+    }
+
+
+    public static void main(String[] args) {
+        BoxPlots plots = new BoxPlots();
+        List<Double> inputs= plots.input();
+        if(inputs.size() > 2)
+            plots.boxPlots(inputs);
     }
 }
